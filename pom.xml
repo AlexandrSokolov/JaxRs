@@ -199,7 +199,7 @@
                     <!-- Fork every test because it will launch a separate AS instance -->
                     <forkCount>1</forkCount>
                     <reuseForks>false</reuseForks>
-                    <argLine>-Djboss.http.port=8181</argLine>
+                    <argLine>-Djboss.http.port=8181 -Djboss.management.http.port=9999</argLine>
                     <systemPropertyVariables>
                         <brandmaker.config.file>${project.basedir}/target/test-classes/config</brandmaker.config.file>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
