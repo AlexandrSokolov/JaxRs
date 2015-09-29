@@ -39,7 +39,21 @@
             <version>16.0.1</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.9</version>
+            <scope>provided</scope>
+        </dependency>
         <!--provided scopes ends-->
+
+        <!--compiled scope starts-->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.1</version>
+        </dependency>
+        <!--compiled scope ends-->
 
         <!--test scopes starts-->
         <dependency>
