@@ -47,6 +47,11 @@ public class UserService
         return cache.get(id);
     }
 
+    public void update(final int id, final UserDto user)
+    {
+        cache.put(id, user);
+    }
+
     public List<UserDto> getAll(final int offset, final int maxResult)
     {
         return Lists.newLinkedList(cache.values());
@@ -56,11 +61,6 @@ public class UserService
     {
         //return all in one page:
         return getAll(0, 0);
-    }
-
-    public int size()
-    {
-        return cache.size();
     }
 
     public int numberOfPages(final int recordsPerPage)
@@ -74,13 +74,12 @@ public class UserService
         return fullPagesNumb;
     }
 
-    public Validator validate(final UserDto user)
+    public Validator validate4Create(final UserDto user)
     {
         if (user == null)
         {
             throw new IllegalArgumentException(USER_CANNOT_BE_NULL);
         }
-
         final Validator validator = Validator.newInstance();
         boolean isValid = true;
         if (user.getId() != 0 )
@@ -88,26 +87,41 @@ public class UserService
             isValid = false;
             validator.addError(NEW_USER_CANNOT_HAVE_ID_FIELD);
         }
+        return validate(user, validator, isValid);
+    }
 
+    public Validator validate4Update(final UserDto user)
+    {
+        if (user == null)
+        {
+            throw new IllegalArgumentException(USER_CANNOT_BE_NULL);
+        }
+        final Validator validator = Validator.newInstance();
+        return validate(user, validator, true);
+    }
+
+    private Validator validate(final UserDto user, final Validator validator, final boolean isValid)
+    {
+        boolean currentIsValid = isValid;
         if (StringUtils.isEmpty(user.getName()))
         {
-            isValid = false;
+            currentIsValid = false;
             validator.addError(USER_NAME_CANNOT_BE_EMPTY);
         }
 
         if (StringUtils.isEmpty(user.getLastName()))
         {
-            isValid = false;
+            currentIsValid = false;
             validator.addError(USER_LASTNAME_CANNOT_BE_EMPTY);
         }
 
         if (user.getAge() <= 18)
         {
-            isValid = false;
+            currentIsValid = false;
             validator.addError(USER_AGE_IS_SMALL);
         }
 
-        if (isValid)
+        if (currentIsValid)
         {
             validator.markAsValid();
         }

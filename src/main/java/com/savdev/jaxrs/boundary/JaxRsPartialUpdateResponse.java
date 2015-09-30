@@ -20,6 +20,7 @@ public class JaxRsPartialUpdateResponse
     public Response partialUpdate()
     {
         //TODO
+        //should return a whole entity after update if compare it with PUT
         return null;
     }
 

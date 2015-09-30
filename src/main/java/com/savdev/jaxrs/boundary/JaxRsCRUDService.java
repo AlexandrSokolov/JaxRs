@@ -6,8 +6,10 @@ import java.util.List;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
@@ -56,7 +58,7 @@ public class JaxRsCRUDService
             return Response.status(Response.Status.CONFLICT).entity(UserService.USER_ALREADY_EXISTS).build();
         }
 
-        final Validator validator = userService.validate(user);
+        final Validator validator = userService.validate4Create(user);
         if (validator.isNotValid())
         {
             String commonError = Joiner.on("; ").skipNulls().join(validator.getErrors());
@@ -139,32 +141,53 @@ public class JaxRsCRUDService
         }
     }
 
-    //
-    //    @GET
-    //    @Produces(MediaType.TEXT_HTML)
-    //    public String getFilteredResult()
-    //    {
-    //        return "Test";
-    //    }
-    //
-    //    @PUT
-    //    @Produces()
-    //    public void update()
-    //    {
-    //
-    //    }
-    //
-    //    @PATCH
-    //    @Produces
-    //    public void partialUpdate()
-    //    {
-    //    }
-    //
-    //    @DELETE
-    //    @Produces
-    //    public void delete()
-    //    {
-    //
-    //    }
+    /**
+     * See: http://stackoverflow.com/questions/797834/should-a-restful-put-operation-return-something
+     *
+     * HTTP status code 204 resource updated successfully
+     * HTTP status code 200 OK for a successful PUT of an update to an existing resource. No response body needed.
+     *              (Per Section 9.6, 204 No Content is even more appropriate.)
+     * HTTP status code 201 Created for a successful PUT of a new resource, with URIs and metadata of
+     *              the new resource echoed in the response body. (RFC 2616 Section 10.2.2)
+     * HTTP status code 409 Conflict for a PUT that is unsuccessful due to a 3rd-party modification, with a
+     *              list of differences between the attempted update and the current resource in the response body.
+     *              (RFC 2616 Section 10.4.10)
+     *              Note: The semantics of the PUT method is to ignore whatever current state the resource is in,
+     *              therefore to return a 409 conflict for a PUT that is unsuccessful due
+     *              to a 3rd party modification only makes sense if the request is conditional
+     * HTTP status code 400 Bad Request for an unsuccessful PUT, with natural-language text (such as English)
+     *              in the response body that explains why the PUT failed. (RFC 2616 Section 10.4)
+     *
+     * @param id
+     * @param user
+     * @return
+     */
+    @PUT
+    @Path("/{id}")
+    public Response update(@PathParam("id") final int id, final UserDto user)
+    {
+        if (user == null)
+        {
+            return Response.status(Response.Status.BAD_REQUEST).entity(UserService.USER_CANNOT_BE_NULL).build();
+        }
+        if (!userService.exists(user.getId()))
+        {
+            return Response.status(Response.Status.NOT_FOUND).entity(UserService.NOT_EXISTING_ID + id).build();
+        }
 
+        final Validator validator = userService.validate4Update(user);
+        if (validator.isNotValid())
+        {
+            String commonError = Joiner.on("; ").skipNulls().join(validator.getErrors());
+            return Response.status(Response.Status.BAD_REQUEST).entity(commonError).build();
+        }
+        userService.update(id, user);
+        return Response.status(Response.Status.NO_CONTENT).build();
+    }
+
+    @DELETE
+    public void delete()
+    {
+
+    }
 }
