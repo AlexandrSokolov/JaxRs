@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.ResourceBundle;
 
 import javax.ws.rs.client.Client;
@@ -11,10 +12,13 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.EntityTag;
+import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.codehaus.jackson.map.ObjectMapper;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.collection.IsIterableContainingInOrder;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit.Arquillian;
@@ -28,6 +32,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import com.google.common.collect.Lists;
 import com.savdev.jaxrs.TestConstants;
 import com.savdev.jaxrs.service.UserService;
 import com.savdev.jaxrs.service.UserServiceMockUserAlreadyExists;
@@ -176,6 +181,20 @@ public class JaxRsCRUDServiceTest
                 StandardCharsets.UTF_8)));
         Assert.assertEquals(entityTag, getResponse.getEntityTag());
         Assert.assertEquals(user, getResponse.readEntity(UserDto.class));
+    }
+
+    @Test
+    @RunAsClient
+    public void testGetAll() throws IOException
+    {
+        final Response getResponse = createTargetForMockUserAlreadyExists().request(MediaType.APPLICATION_JSON_TYPE)
+                .get();
+        Assert.assertEquals(Response.Status.OK.getStatusCode(), getResponse.getStatus());
+        List<UserDto> expectedResult = Lists.newArrayList(UserServiceMockUserAlreadyExists.userDto1,
+                UserServiceMockUserAlreadyExists.userDto2, UserServiceMockUserAlreadyExists.userDto3);
+        //if you get getResponse.readEntity(List.class); you'll get a list of Maps, but not objects
+        List<UserDto> actual = getResponse.readEntity(new GenericType<List<UserDto>>() {});
+        MatcherAssert.assertThat(actual, IsIterableContainingInOrder.contains(expectedResult.toArray()));
     }
 
     private WebTarget createTargetForRealUserService()

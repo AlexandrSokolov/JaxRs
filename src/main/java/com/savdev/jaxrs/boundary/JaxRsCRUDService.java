@@ -2,6 +2,7 @@ package com.savdev.jaxrs.boundary;
 
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -98,10 +99,10 @@ public class JaxRsCRUDService
 
     //TODO paging, filtering, sorting
     @GET
-    @Produces(MediaType.TEXT_HTML)
-    public String getAll()
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<UserDto> getAll()
     {
-        return "Test";
+        return userService.getAll();
     }
     //
     //    @GET

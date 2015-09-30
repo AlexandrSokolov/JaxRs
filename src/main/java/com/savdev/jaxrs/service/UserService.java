@@ -1,10 +1,12 @@
 package com.savdev.jaxrs.service;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.savdev.jaxrs.boundary.UserDto;
 import com.savdev.jaxrs.boundary.Validator;
@@ -43,6 +45,11 @@ public class UserService
             throw new IllegalArgumentException(NOT_EXISTING_ID + id);
         }
         return cache.get(id);
+    }
+
+    public List<UserDto> getAll()
+    {
+        return Lists.newLinkedList(cache.values());
     }
 
     public Validator validate(final UserDto user)
