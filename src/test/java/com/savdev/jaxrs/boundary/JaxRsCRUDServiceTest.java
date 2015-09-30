@@ -113,29 +113,6 @@ public class JaxRsCRUDServiceTest
 
     @Test
     @RunAsClient
-    public void testGetAfterCreate() throws IOException
-    {
-
-        UserDto user = new ObjectMapper()
-                .readValue(JaxRsCRUDServiceTest.class.getResourceAsStream("/data/correct.not.existing.user.json"),
-                        UserDto.class);
-        final Response response = createTargetForRealUserService().request()
-                .post(Entity.entity(user, MediaType.APPLICATION_JSON_TYPE));
-        final String newResourceUrl = response.getHeaderString("Location");
-        Assert.assertNotNull(newResourceUrl);
-
-        final Client getClient = ClientBuilder.newClient();
-        final WebTarget getTarget = getClient.target(newResourceUrl);
-        final Response getResponse = getTarget.request(MediaType.APPLICATION_JSON_TYPE).get();
-        Assert.assertEquals(Response.Status.OK.getStatusCode(), getResponse.getStatus());
-        EntityTag entityTag = new EntityTag(org.apache.commons.codec.digest.DigestUtils.md5Hex(user.toString().getBytes(
-                StandardCharsets.UTF_8)));
-        Assert.assertEquals(entityTag, getResponse.getEntityTag());
-        Assert.assertEquals(user, getResponse.readEntity(UserDto.class));
-    }
-
-    @Test
-    @RunAsClient
     public void testGetNotExisting() throws IOException
     {
         Client client = ClientBuilder.newClient();
@@ -163,6 +140,12 @@ public class JaxRsCRUDServiceTest
         return war;
     }
 
+    /**
+     * When we try to create a user, and set ID, and user with such ID already creats, it's forbidden,
+     * you get CONFLICT responce
+     *
+     * @throws IOException
+     */
     @Test
     @RunAsClient
     public void testCreateWithExistingId() throws IOException
@@ -175,6 +158,24 @@ public class JaxRsCRUDServiceTest
         Assert.assertEquals(Response.Status.CONFLICT.getStatusCode(), response.getStatus());
         Assert.assertEquals(UserService.USER_ALREADY_EXISTS, response.readEntity(String.class));
 
+    }
+
+    @Test
+    @RunAsClient
+    public void testGet() throws IOException
+    {
+        Client client = ClientBuilder.newClient();
+        WebTarget target = client.target(TestConstants.HOST_PORT).path(
+                TestConstants.USER_EXISTS_BASE_ENDPOINT + JAXRSConfiguration.JAX_RS_CRUD_ENDPOINT + "/" + EXISTING_KEY);
+        final Response getResponse = target.request(MediaType.APPLICATION_JSON_TYPE).get();
+        Assert.assertEquals(Response.Status.OK.getStatusCode(), getResponse.getStatus());
+
+        UserDto user = new UserDto();
+        user.setId(EXISTING_KEY);
+        EntityTag entityTag = new EntityTag(org.apache.commons.codec.digest.DigestUtils.md5Hex(user.toString().getBytes(
+                StandardCharsets.UTF_8)));
+        Assert.assertEquals(entityTag, getResponse.getEntityTag());
+        Assert.assertEquals(user, getResponse.readEntity(UserDto.class));
     }
 
     private WebTarget createTargetForRealUserService()
