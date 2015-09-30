@@ -30,6 +30,7 @@ import org.junit.runner.RunWith;
 
 import com.savdev.jaxrs.TestConstants;
 import com.savdev.jaxrs.service.UserService;
+import com.savdev.jaxrs.service.UserServiceMockUserAlreadyExists;
 
 /**
  */
@@ -37,6 +38,7 @@ import com.savdev.jaxrs.service.UserService;
 public class JaxRsCRUDServiceTest
 {
     private static final int NOT_EXISTING_KEY = 999;
+    private static final int EXISTING_KEY = 100;
 
     @Deployment
     public static WebArchive createDeployment() throws URISyntaxException
@@ -46,7 +48,7 @@ public class JaxRsCRUDServiceTest
         File[] files = Maven.resolver().loadPomFromFile(baseDir + File.separator + "pom.xml")
                 .importDependencies(ScopeType.COMPILE, ScopeType.PROVIDED).resolve().withTransitivity().asFile();
         WebArchive war = ShrinkWrap.create(WebArchive.class, "jaxrs.war")
-                .addPackages(true, Filters.exclude(".*Test.*"), JAXRSConfiguration.class.getPackage(),
+                .addPackages(true, Filters.exclude(".*Test.*|.*Mock.*"), JAXRSConfiguration.class.getPackage(),
                         UserService.class.getPackage())
                 .addAsLibraries(files)
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
@@ -58,13 +60,11 @@ public class JaxRsCRUDServiceTest
     @RunAsClient
     public void testCreateSuccessful() throws IOException
     {
-        Client client = ClientBuilder.newClient();
-        WebTarget target = client.target(TestConstants.HOST_PORT).path(
-                TestConstants.JAX_RS_BASE_ENDPOINT + JAXRSConfiguration.JAX_RS_CRUD_ENDPOINT);
         UserDto user = new ObjectMapper()
                 .readValue(JaxRsCRUDServiceTest.class.getResourceAsStream("/data/correct.not.existing.user.json"),
                         UserDto.class);
-        final Response response = target.request().post(Entity.entity(user, MediaType.APPLICATION_JSON_TYPE));
+        final Response response = createTargetForRealUserService().request()
+                .post(Entity.entity(user, MediaType.APPLICATION_JSON_TYPE));
         Assert.assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
         Assert.assertTrue(response.getHeaderString("Location")
                 .startsWith(TestConstants.HOST_PORT + TestConstants.JAX_RS_BASE_ENDPOINT
@@ -76,30 +76,13 @@ public class JaxRsCRUDServiceTest
 
     @Test
     @RunAsClient
-    public void testCreateWithExistingId() throws IOException
-    {
-        //Response.Status.CONFLICT 409
-    }
-
-    @Test
-    @RunAsClient
-    public void testCreateWithNotExistingId() throws IOException
-    {
-        //Response.Status.BAD_REQUEST 400
-    }
-
-    @Test
-    @RunAsClient
     public void testCreateWrongUser() throws IOException
     {
-
-        Client client = ClientBuilder.newClient();
-        WebTarget target = client.target(TestConstants.HOST_PORT).path(
-                TestConstants.JAX_RS_BASE_ENDPOINT + JAXRSConfiguration.JAX_RS_CRUD_ENDPOINT);
         UserDto user = new ObjectMapper()
                 .readValue(JaxRsCRUDServiceTest.class.getResourceAsStream("/data/wrong.not.existing.user.json"),
                         UserDto.class);
-        final Response response = target.request().post(Entity.entity(user, MediaType.APPLICATION_JSON_TYPE));
+        final Response response = createTargetForRealUserService().request()
+                .post(Entity.entity(user, MediaType.APPLICATION_JSON_TYPE));
         Assert.assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
         Assert.assertEquals(UserService.USER_LASTNAME_CANNOT_BE_EMPTY, response.readEntity(String.class));
     }
@@ -108,25 +91,36 @@ public class JaxRsCRUDServiceTest
     @RunAsClient
     public void testCreateNoData() throws IOException
     {
-        Client client = ClientBuilder.newClient();
-        WebTarget target = client.target(TestConstants.HOST_PORT).path(
-                TestConstants.JAX_RS_BASE_ENDPOINT + JAXRSConfiguration.JAX_RS_CRUD_ENDPOINT);
-        final Response response = target.request().post(Entity.entity("", MediaType.APPLICATION_JSON_TYPE));
+        final Response response = createTargetForRealUserService().request()
+                .post(Entity.entity("", MediaType.APPLICATION_JSON_TYPE));
         Assert.assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
         Assert.assertEquals(UserService.USER_CANNOT_BE_NULL, response.readEntity(String.class));
     }
 
     @Test
     @RunAsClient
+    public void testCreateWithIdConfigured() throws IOException
+    {
+        UserDto userDto = new ObjectMapper()
+                .readValue(JaxRsCRUDServiceTest.class.getResourceAsStream("/data/correct.not.existing.user.json"),
+                        UserDto.class);
+        userDto.setId(EXISTING_KEY);
+        final Response response = createTargetForRealUserService().request().post(
+                Entity.entity(userDto, MediaType.APPLICATION_JSON_TYPE));
+        Assert.assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
+        Assert.assertEquals(UserService.NEW_USER_CANNOT_HAVE_ID_FIELD, response.readEntity(String.class));
+    }
+
+    @Test
+    @RunAsClient
     public void testGetAfterCreate() throws IOException
     {
-        Client client = ClientBuilder.newClient();
-        WebTarget target = client.target(TestConstants.HOST_PORT).path(
-                TestConstants.JAX_RS_BASE_ENDPOINT + JAXRSConfiguration.JAX_RS_CRUD_ENDPOINT);
+
         UserDto user = new ObjectMapper()
                 .readValue(JaxRsCRUDServiceTest.class.getResourceAsStream("/data/correct.not.existing.user.json"),
                         UserDto.class);
-        final Response response = target.request().post(Entity.entity(user, MediaType.APPLICATION_JSON_TYPE));
+        final Response response = createTargetForRealUserService().request()
+                .post(Entity.entity(user, MediaType.APPLICATION_JSON_TYPE));
         final String newResourceUrl = response.getHeaderString("Location");
         Assert.assertNotNull(newResourceUrl);
 
@@ -150,5 +144,53 @@ public class JaxRsCRUDServiceTest
         final Response response = target.request().get();
         Assert.assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
         Assert.assertEquals(UserService.NOT_EXISTING_ID + NOT_EXISTING_KEY, response.readEntity(String.class));
+    }
+
+    @Deployment(name = TestConstants.USER_EXISTS_BASE_ENDPOINT)
+    public static WebArchive createMockUserAlreadyExistDeployment() throws URISyntaxException
+    {
+        ResourceBundle resourceBundle = ResourceBundle.getBundle("tests");
+        String baseDir = resourceBundle.getString("basedir");
+        File[] files = Maven.resolver().loadPomFromFile(baseDir + File.separator + "pom.xml")
+                .importDependencies(ScopeType.COMPILE, ScopeType.PROVIDED).resolve().withTransitivity().asFile();
+        WebArchive war = ShrinkWrap.create(WebArchive.class, TestConstants.USER_EXISTS_BASE_ENDPOINT + ".war")
+                .addPackages(true, Filters.exclude(".*Test.*"), JAXRSConfiguration.class.getPackage(),
+                        UserService.class.getPackage())
+                .addClass(UserServiceMockUserAlreadyExists.class)
+                .addAsLibraries(files)
+                .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
+        System.out.println(war.toString(true));
+        return war;
+    }
+
+    @Test
+    @RunAsClient
+    public void testCreateWithExistingId() throws IOException
+    {
+        //Response.Status.CONFLICT 409
+        UserDto user = new UserDto();
+        user.setId(EXISTING_KEY);
+        final Response response = createTargetForMockUserAlreadyExists().request()
+                .post(Entity.entity(user, MediaType.APPLICATION_JSON_TYPE));
+        Assert.assertEquals(Response.Status.CONFLICT.getStatusCode(), response.getStatus());
+        Assert.assertEquals(UserService.USER_ALREADY_EXISTS, response.readEntity(String.class));
+
+    }
+
+    private WebTarget createTargetForRealUserService()
+    {
+        Client client = ClientBuilder.newClient();
+        return client.target(TestConstants.HOST_PORT)
+                .path(TestConstants.JAX_RS_BASE_ENDPOINT + JAXRSConfiguration.JAX_RS_CRUD_ENDPOINT);
+    }
+
+    /**
+     * @return WebTarget for UserService mock that always returns true when exists() is invoked
+     */
+    private WebTarget createTargetForMockUserAlreadyExists()
+    {
+        Client client = ClientBuilder.newClient();
+        return client.target(TestConstants.HOST_PORT)
+                .path(TestConstants.USER_EXISTS_BASE_ENDPOINT + JAXRSConfiguration.JAX_RS_CRUD_ENDPOINT);
     }
 }
