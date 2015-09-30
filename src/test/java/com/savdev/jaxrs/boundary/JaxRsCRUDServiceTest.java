@@ -193,7 +193,9 @@ public class JaxRsCRUDServiceTest
         List<UserDto> expectedResult = Lists.newArrayList(UserServiceMockUserAlreadyExists.userDto1,
                 UserServiceMockUserAlreadyExists.userDto2, UserServiceMockUserAlreadyExists.userDto3);
         //if you get getResponse.readEntity(List.class); you'll get a list of Maps, but not objects
-        List<UserDto> actual = getResponse.readEntity(new GenericType<List<UserDto>>() {});
+        List<UserDto> actual = getResponse.readEntity(new GenericType<List<UserDto>>()
+        {
+        });
         MatcherAssert.assertThat(actual, IsIterableContainingInOrder.contains(expectedResult.toArray()));
     }
 
@@ -201,7 +203,39 @@ public class JaxRsCRUDServiceTest
     @RunAsClient
     public void testGetPagination() throws IOException
     {
-        Assert.fail("TODO");
+        final Response getResponse = createTargetForMockUserAlreadyExists()
+                .queryParam("offset", UserServiceMockUserAlreadyExists.offset)
+                .queryParam("maxResults", UserServiceMockUserAlreadyExists.maxResults)
+                .request(MediaType.APPLICATION_JSON_TYPE).get();
+        Assert.assertEquals(Response.Status.OK.getStatusCode(), getResponse.getStatus());
+        ListResource listResource = getResponse.readEntity(ListResource.class);
+        Assert.assertNotNull(listResource);
+        Assert.assertEquals(UserServiceMockUserAlreadyExists.offset, listResource.getOffset());
+        Assert.assertEquals(UserServiceMockUserAlreadyExists.maxResults, listResource.getMaxResult());
+        Assert.assertEquals(UserServiceMockUserAlreadyExists.numberOfPages, listResource.getNumberOfPages());
+        Assert.assertEquals(UserServiceMockUserAlreadyExists.maxResults, listResource.getItems().size());
+    }
+
+    @Test
+    @RunAsClient
+    public void testGetPaginationWithoutOffset() throws IOException
+    {
+        final Response response = createTargetForMockUserAlreadyExists()
+                .queryParam("maxResults", UserServiceMockUserAlreadyExists.maxResults)
+                .request(MediaType.APPLICATION_JSON_TYPE).get();
+        Assert.assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
+        Assert.assertEquals(ListResource.OFFSET_AND_MAX_RESULT_MUST_EXISTS, response.readEntity(String.class));
+    }
+
+    @Test
+    @RunAsClient
+    public void testGetPaginationWithoutMaxResult() throws IOException
+    {
+        final Response response = createTargetForMockUserAlreadyExists()
+                .queryParam("offset", UserServiceMockUserAlreadyExists.offset)
+                .request(MediaType.APPLICATION_JSON_TYPE).get();
+        Assert.assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
+        Assert.assertEquals(ListResource.OFFSET_AND_MAX_RESULT_MUST_EXISTS, response.readEntity(String.class));
     }
 
     private WebTarget createTargetForRealUserService()
