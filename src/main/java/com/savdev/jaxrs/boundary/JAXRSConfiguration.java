@@ -13,10 +13,11 @@ import com.google.common.collect.Sets;
 public class JAXRSConfiguration extends Application
 {
     public static final String JAX_RS_CRUD_ENDPOINT = "/crud";
+    public static final String JAX_RS_PARTIAL_ENDPOINT = "/partial";
     @Override
     @SuppressWarnings("unchecked")
     public Set<Class<?>> getClasses()
     {
-        return Sets.newHashSet(JaxRsCRUDService.class);
+        return Sets.newHashSet(JaxRsCRUDService.class, JaxRsPartialUpdateResponse.class);
     }
 }
