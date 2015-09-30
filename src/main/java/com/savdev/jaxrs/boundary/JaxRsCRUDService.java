@@ -84,13 +84,9 @@ public class JaxRsCRUDService
     @Path("/{id}")
     public Response read(@PathParam("id") final int id)
     {
-        if (id == 0)
-        {
-            return Response.status(Response.Status.BAD_REQUEST).entity(UserService.WRONG_ID).build();
-        }
         if (!userService.exists(id))
         {
-            return Response.status(Response.Status.NOT_FOUND).entity(UserService.NOT_EXISTING_ID + id).build();
+            return Response.status(Response.Status.NOT_FOUND).entity(UserService.CANNOT_FIND_ENTITY + id).build();
         }
 
         final UserDto user = userService.get(id);
@@ -172,7 +168,7 @@ public class JaxRsCRUDService
         }
         if (!userService.exists(user.getId()))
         {
-            return Response.status(Response.Status.NOT_FOUND).entity(UserService.NOT_EXISTING_ID + id).build();
+            return Response.status(Response.Status.NOT_FOUND).entity(UserService.CANNOT_FIND_ENTITY + id).build();
         }
 
         final Validator validator = userService.validate4Update(user);
@@ -185,9 +181,35 @@ public class JaxRsCRUDService
         return Response.status(Response.Status.NO_CONTENT).build();
     }
 
+    /**
+     * return a 204 (successful, no content)
+     * returns a 404 (not found) on subsequent calls
+     * See http://stackoverflow.com/questions/6439416/deleting-a-resource-using-http-delete
+     *
+     * As HTTP requests in a stateless system should be independent, the results of one request should not be
+     *  dependent on a previous request. Consider what should happen if two users did a DELETE on the same resource
+     *  simultaneously. It makes sense for the second request to get a 404.
+     *  The same should be true if one user makes two requests.
+     *
+     * I am guessing that having DELETE return two different responses does not feel idempotent to you.
+     * I find it useful to think of idempotent requests as leaving the system in the same state, not necessarily
+     * having the same response. So regardless of whether you DELETE an existing resource, or attempt to DELETE a
+     * resource that does not exist, the server resource state is the same.
+     *
+     * ...But in practice, implementing DELETE as an idempotent operation (same response on subsequent calls)
+     *  requires the server to keep track of all deleted resources. Otherwise, it can return a 404 (Not Found).
+     *
+     * @param id
+     */
     @DELETE
-    public void delete()
+    @Path("/{id}")
+    public Response delete(@PathParam("id") final int id)
     {
-
+        if (!userService.exists(id))
+        {
+            return Response.status(Response.Status.NOT_FOUND).entity(UserService.CANNOT_FIND_ENTITY + id).build();
+        }
+        userService.delete(id);
+        return Response.status(Response.Status.NO_CONTENT).build();
     }
 }

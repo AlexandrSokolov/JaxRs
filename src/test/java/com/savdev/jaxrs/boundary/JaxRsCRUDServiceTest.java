@@ -121,7 +121,7 @@ public class JaxRsCRUDServiceTest
     {
         final Response response = createTargetForRealUserService("/" + NOT_EXISTING_KEY).request().get();
         Assert.assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
-        Assert.assertEquals(UserService.NOT_EXISTING_ID + NOT_EXISTING_KEY, response.readEntity(String.class));
+        Assert.assertEquals(UserService.CANNOT_FIND_ENTITY + NOT_EXISTING_KEY, response.readEntity(String.class));
     }
 
     @Test
@@ -134,7 +134,17 @@ public class JaxRsCRUDServiceTest
         final Response response = createTargetForRealUserService("/" + NOT_EXISTING_KEY).request()
                 .put(Entity.entity(userDto, MediaType.APPLICATION_JSON_TYPE));
         Assert.assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
-        Assert.assertEquals(UserService.NOT_EXISTING_ID + NOT_EXISTING_KEY, response.readEntity(String.class));
+        Assert.assertEquals(UserService.CANNOT_FIND_ENTITY + NOT_EXISTING_KEY, response.readEntity(String.class));
+    }
+
+    @Test
+    @RunAsClient
+    public void testDeleteNotExisting() throws IOException
+    {
+        final Response response = createTargetForRealUserService("/" + NOT_EXISTING_KEY).request()
+                .delete();
+        Assert.assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
+        Assert.assertEquals(UserService.CANNOT_FIND_ENTITY + NOT_EXISTING_KEY, response.readEntity(String.class));
     }
 
     @Deployment(name = TestConstants.USER_EXISTS_BASE_ENDPOINT)
@@ -280,6 +290,16 @@ public class JaxRsCRUDServiceTest
                 .put(Entity.entity("", MediaType.APPLICATION_JSON_TYPE));
         Assert.assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
         Assert.assertEquals(UserService.USER_CANNOT_BE_NULL, response.readEntity(String.class));
+    }
+
+    @Test
+    @RunAsClient
+    public void testDeleteSuccessful() throws IOException
+    {
+        final Response response = createTargetForMockUserAlreadyExists(
+                "/" + UserServiceMockUserAlreadyExists.EXISTING_KEY).request()
+                .delete();
+        Assert.assertEquals(Response.Status.NO_CONTENT.getStatusCode(), response.getStatus());
     }
 
     private WebTarget createTargetForRealUserService()

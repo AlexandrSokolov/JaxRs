@@ -21,8 +21,7 @@ public class UserService
     public static final String USER_CANNOT_BE_NULL = "User cannot be null";
     public static final String USER_ALREADY_EXISTS = "User already exists";
     public static final String USER_LASTNAME_CANNOT_BE_EMPTY = "User lastname cannot be null or empty";
-    public static final String WRONG_ID = "Entity ID cannot be null or empty";
-    public static final String NOT_EXISTING_ID = "Cannot find entity with id = ";
+    public static final String CANNOT_FIND_ENTITY = "Cannot find entity with id = ";
 
     private static final Map<Integer, UserDto> cache = Maps.newConcurrentMap();
 
@@ -42,7 +41,7 @@ public class UserService
     {
         if (!cache.containsKey(id))
         {
-            throw new IllegalArgumentException(NOT_EXISTING_ID + id);
+            throw new IllegalArgumentException(CANNOT_FIND_ENTITY + id);
         }
         return cache.get(id);
     }
@@ -50,6 +49,11 @@ public class UserService
     public void update(final int id, final UserDto user)
     {
         cache.put(id, user);
+    }
+
+    public void delete(final int id)
+    {
+        cache.remove(id);
     }
 
     public List<UserDto> getAll(final int offset, final int maxResult)
