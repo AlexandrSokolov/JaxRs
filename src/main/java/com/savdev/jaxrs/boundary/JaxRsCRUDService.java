@@ -10,7 +10,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.MediaType;
@@ -32,15 +32,15 @@ public class JaxRsCRUDService
     UserService userService;
 
     /**
-     * @return  A 201 (Created) status code and a Location header whose value is the URI to the newly created resource.
-     *          A 201 response MAY contain an ETag response header field
-     *
-     *          If resource already exists, return 409 Conflict
-     *
-     *          A 400 (Bad Request) status code is returned with error description if validation fails
-     *
-     *          Response body content may or may not be present:
-     *          You MAY return 200 (OK) status code, with an entity describing or containing the result of the action
+     * @return A 201 (Created) status code and a Location header whose value is the URI to the newly created resource.
+     * A 201 response MAY contain an ETag response header field
+     * <p/>
+     * If resource already exists, return 409 Conflict
+     * <p/>
+     * A 400 (Bad Request) status code is returned with error description if validation fails
+     * <p/>
+     * Response body content may or may not be present:
+     * You MAY return 200 (OK) status code, with an entity describing or containing the result of the action
      * @throws URISyntaxException
      */
     @POST
@@ -98,12 +98,47 @@ public class JaxRsCRUDService
     }
 
     //TODO paging, filtering, sorting
+
+    /**
+     * You may get when return List:
+     * MessageBodyWriter not found for media type=application/json, type=class java.util.Arrays$ArrayList,
+     * genericType=class java.util.Arrays$ArrayList
+     * <p/>
+     * In this case solution is:
+     * GenericEntity<List<UserDto>> list = new GenericEntity<List<UserDto>>(workshops) {};
+     * and return it
+     * <p/>
+     * In Jax Rs Client API you can get it:
+     * List<UserDto> actual = response.readEntity(new GenericType<List<UserDto>>() {});
+     *
+     * @return
+     */
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    public List<UserDto> getAll()
+    public Response getListOfItems(@QueryParam("offset") final int offset,
+            @QueryParam("maxResults") final int maxResults)
     {
-        return userService.getAll();
+        if (offset == 0 && maxResults == 0)
+        {
+            return Response.ok(userService.getAll(), MediaType.APPLICATION_JSON_TYPE).build();
+        }
+        else
+        {
+            if (offset == 0 || maxResults == 0)
+            {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(ListResource.OFFSET_AND_MAX_RESULT_MUST_EXISTS).build();
+            }
+
+            List<UserDto> items = userService.getAll(offset, maxResults);
+            ListResource listResource = new ListResource();
+            listResource.setItems(items);
+            listResource.setMaxResult(maxResults);
+            listResource.setOffset(offset);
+            listResource.setNumberOfPages(userService.numberOfPages(maxResults));
+            return Response.ok(listResource, MediaType.APPLICATION_JSON_TYPE).build();
+        }
     }
+
     //
     //    @GET
     //    @Produces(MediaType.TEXT_HTML)

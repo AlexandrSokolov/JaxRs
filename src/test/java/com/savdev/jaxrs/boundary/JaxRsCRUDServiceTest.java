@@ -197,6 +197,13 @@ public class JaxRsCRUDServiceTest
         MatcherAssert.assertThat(actual, IsIterableContainingInOrder.contains(expectedResult.toArray()));
     }
 
+    @Test
+    @RunAsClient
+    public void testGetPagination() throws IOException
+    {
+        Assert.fail("TODO");
+    }
+
     private WebTarget createTargetForRealUserService()
     {
         Client client = ClientBuilder.newClient();

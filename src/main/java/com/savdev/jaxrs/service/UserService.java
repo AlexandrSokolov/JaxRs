@@ -47,9 +47,31 @@ public class UserService
         return cache.get(id);
     }
 
-    public List<UserDto> getAll()
+    public List<UserDto> getAll(final int offset, final int maxResult)
     {
         return Lists.newLinkedList(cache.values());
+    }
+
+    public List<UserDto> getAll()
+    {
+        //return all in one page:
+        return getAll(0, 0);
+    }
+
+    public int size()
+    {
+        return cache.size();
+    }
+
+    public int numberOfPages(final int recordsPerPage)
+    {
+        int fullPagesNumb = cache.size() / recordsPerPage;
+        if (cache.size() % recordsPerPage != 0)
+        {
+            fullPagesNumb++;
+        }
+
+        return fullPagesNumb;
     }
 
     public Validator validate(final UserDto user)

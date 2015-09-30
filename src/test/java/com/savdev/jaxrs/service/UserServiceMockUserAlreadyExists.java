@@ -44,7 +44,7 @@ public class UserServiceMockUserAlreadyExists extends UserService
     }
 
     @Override
-    public List<UserDto> getAll()
+    public List<UserDto> getAll(final int offset, final int maxResult)
     {
         return Lists.newArrayList(userDto1, userDto2, userDto3);
     }
