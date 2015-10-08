@@ -51,6 +51,12 @@
             <version>1.9</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.4</version>
+            <scope>provided</scope>
+        </dependency>
         <!--provided scopes ends-->
 
         <!--compiled scope starts-->
