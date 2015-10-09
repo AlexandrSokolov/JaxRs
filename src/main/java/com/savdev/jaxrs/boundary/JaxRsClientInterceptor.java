@@ -30,7 +30,8 @@ public class JaxRsClientInterceptor implements ClientRequestFilter {
         //set cookie via headers:
         final List<Object> cookies = requestContext.getHeaders().get("Cookie");
         cookies.add(new Cookie(NEW_COOKIE_KEY, COOKIE_DATA));
-        requestContext.getHeaders().put("Cookie", cookies);
+        //not necessary:
+        //requestContext.getHeaders().put("Cookie", cookies);
     }
 
     public static ClientRequestFilter getInstance()
