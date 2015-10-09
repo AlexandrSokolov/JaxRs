@@ -31,6 +31,9 @@ import com.savdev.jaxrs.TestConstants;
 @RunWith(Arquillian.class)
 public class JaxRsClientInterceptorTest {
 
+    public static final String EXPECTED_RESPONSE = "Header: 'someData'; "
+            + "cookieFromInterceptor = 'cookieDataFromInterceptor'; cookieFromRequest = 'cookieFromRequestInTest'";
+
     @Deployment
     public static WebArchive createDeployment() throws URISyntaxException
     {
@@ -50,6 +53,8 @@ public class JaxRsClientInterceptorTest {
      * Now we force to attache header in AOP way when use JAX RS Client API.
      * This header attached in JaxRsClientInterceptor
      * and returned by rest service as an entity
+     *
+     * Also example with cookies has been added
      * @throws IOException
      */
     @Test
@@ -61,8 +66,8 @@ public class JaxRsClientInterceptorTest {
         Response response = client.target(TestConstants.HOST_PORT)
                 .path(TestConstants.JAX_RS_BASE_ENDPOINT
                         + JAXRSConfiguration2TestClientInterceptor.JAX_RS_BASE_ENDPOINT)
-                .request().get();
+                .request().cookie(JaxRs2TestClientInterceptor.INTERNAL_COOKIE_NAME, "cookieFromRequestInTest").get();
         Assert.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-        Assert.assertEquals(JaxRsClientInterceptor.UI_DATA, response.readEntity(String.class));
+        Assert.assertEquals(EXPECTED_RESPONSE, response.readEntity(String.class));
     }
 }
