@@ -51,7 +51,7 @@ public class JaxRsCRUDServiceTest
         String baseDir = resourceBundle.getString("basedir");
         File[] files = Maven.resolver().loadPomFromFile(baseDir + File.separator + "pom.xml")
                 .importDependencies(ScopeType.COMPILE, ScopeType.PROVIDED).resolve().withTransitivity().asFile();
-        WebArchive war = ShrinkWrap.create(WebArchive.class, "jaxrs.war")
+        WebArchive war = ShrinkWrap.create(WebArchive.class, TestConstants.JAX_RS_BASE_ENDPOINT+ ".war")
                 .addPackages(true, Filters.exclude(".*Test.*|.*Mock.*"), JAXRSConfiguration.class.getPackage(),
                         UserService.class.getPackage())
                 .addAsLibraries(files)
@@ -71,7 +71,7 @@ public class JaxRsCRUDServiceTest
                 .post(Entity.entity(user, MediaType.APPLICATION_JSON_TYPE));
         Assert.assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
         Assert.assertTrue(response.getHeaderString("Location")
-                .startsWith(TestConstants.HOST_PORT + TestConstants.JAX_RS_BASE_ENDPOINT
+                .startsWith(TestConstants.HOST_PORT + "/" + TestConstants.JAX_RS_BASE_ENDPOINT
                         + JAXRSConfiguration.JAX_RS_CRUD_ENDPOINT));
         EntityTag entityTag = new EntityTag(org.apache.commons.codec.digest.DigestUtils.md5Hex(user.toString().getBytes(
                 StandardCharsets.UTF_8)));
